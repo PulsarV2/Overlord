@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
@@ -60,10 +62,13 @@ func Load() Config {
 
 	serverURLs := []string{}
 	for _, url := range strings.Split(server, ",") {
-		url = strings.TrimSpace(url)
-		if url != "" {
-			url = strings.TrimRight(url, "/")
-			serverURLs = append(serverURLs, url)
+		normalized, err := normalizeServerURL(url)
+		if err != nil {
+			log.Printf("[config] WARNING: invalid server URL %q: %v", strings.TrimSpace(url), err)
+			continue
+		}
+		if normalized != "" {
+			serverURLs = append(serverURLs, normalized)
 		}
 	}
 
@@ -190,4 +195,38 @@ func hostname() string {
 		return "unknown"
 	}
 	return h
+}
+
+func normalizeServerURL(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", nil
+	}
+
+	normalized := trimmed
+	if !strings.Contains(normalized, "://") {
+		normalized = "wss://" + normalized
+	}
+
+	parsed, err := url.Parse(normalized)
+	if err != nil {
+		return "", err
+	}
+
+	switch strings.ToLower(parsed.Scheme) {
+	case "ws", "wss":
+	case "http":
+		parsed.Scheme = "ws"
+	case "https":
+		parsed.Scheme = "wss"
+	default:
+		return "", fmt.Errorf("unsupported scheme: %s", parsed.Scheme)
+	}
+
+	if parsed.Host == "" {
+		return "", fmt.Errorf("missing host")
+	}
+
+	parsed.Path = strings.TrimRight(parsed.Path, "/")
+	return parsed.String(), nil
 }
