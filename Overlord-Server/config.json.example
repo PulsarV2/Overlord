@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "username": "admin",
+    "password": "admin",
+    "jwtSecret": "change-this-secret-in-production"
+  },
+  "server": {
+    "port": 5173,
+    "host": "0.0.0.0"
+  },
+  "tls": {
+    "certPath": "./certs/server.crt",
+    "keyPath": "./certs/server.key",
+    "caPath": ""
+  }
+}

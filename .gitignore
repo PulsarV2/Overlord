@@ -1,0 +1,42 @@
+# Node/Bun
+node_modules/
+bun.lockb
+.next/
+.cache/
+dist/
+.tmp/
+*.db
+
+# Configuration
+config.json
+
+# Docker
+.env
+
+# Go
+bin/
+*.exe
+*.test
+*.out
+
+# Certificates (auto-generated)
+certs/
+*.crt
+*.key
+*.pem
+*.csr
+
+# OS
+.DS_Store
+Thumbs.db
+
+dist-clients/*
+
+# Plugins
+Overlord-Server/plugins/*.zip
+Overlord-Server/plugins/.plugin-state.json
+plugin-sample-go/*.wasm
+plugin-sample-go/*.zip
+
+# Runtime data
+Overlord-Server/data/

@@ -1,0 +1,57 @@
+services:
+  overlord-server:
+    image: ${DOCKER_IMAGE:-ghcr.io/yourusername/overlord-server:latest}
+    container_name: overlord-server
+    ports:
+      - "5173:5173"
+    environment:
+      # Change these before deploying
+      - OVERLORD_USER=admin
+      - OVERLORD_PASS=ChangeMe123!
+      - JWT_SECRET=please-change-me-32-characters
+      # Server settings
+      - PORT=5173
+      - HOST=0.0.0.0
+      # TLS paths (self-signed is auto-generated if not present)
+      - OVERLORD_TLS_CERT=/app/certs/server.crt
+      - OVERLORD_TLS_KEY=/app/certs/server.key
+      - OVERLORD_TLS_CA=
+    volumes:
+      - overlord-data:/app/data
+      - overlord-certs:/app/certs
+      # Uncomment to use a static config file instead of env vars
+      # - ./Overlord-Server/config.json:/app/config.json:ro
+    restart: unless-stopped
+    networks:
+      - overlord-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:5173/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  agent-builder:
+    build:
+      context: .
+      dockerfile: docker/agent-builder.Dockerfile
+    image: overlord/agent-builder:local
+    container_name: overlord-agent-builder
+    profiles: ["builder"]
+    environment:
+      - TARGETS=windows/amd64,windows/arm64,linux/amd64,linux/arm64,linux/arm/v7,darwin/arm64
+      - OUT_DIR=/out
+      - LDFLAGS=-s -w
+      - GO_BUILD_FLAGS=-trimpath
+    volumes:
+      - ./dist-clients:/out
+    networks:
+      - overlord-network
+
+networks:
+  overlord-network:
+    driver: bridge
+
+volumes:
+  overlord-data:
+  overlord-certs:

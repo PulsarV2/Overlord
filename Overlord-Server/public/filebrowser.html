@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Browser - Overlord</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/powershell.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f172a'/%3E%3Cpath d='M18 44l7-22h4l7 22h-4l-1.4-4.5h-7.2L22 44h-4zm8.3-8.2h5.4L30 24.5h-.2l-3.5 11.3zM44 22h4v20h-4V22z' fill='%23a5b4fc'/%3E%3C/svg%3E"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .file-item:hover {
+        background-color: rgba(51, 65, 85, 0.5);
+      }
+      .file-item {
+        position: relative;
+      }
+      .file-item.selected {
+        background-color: rgba(59, 130, 246, 0.2);
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+      .file-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 12px;
+        height: 100%;
+        border: none;
+        border-radius: 0;
+        background-color: rgba(100, 116, 139, 0.3);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 1;
+      }
+      .file-checkbox:hover {
+        background-color: rgba(100, 116, 139, 0.5);
+      }
+      .file-checkbox:checked {
+        background-color: #3b82f6;
+      }
+      .file-checkbox:checked:hover {
+        background-color: #2563eb;
+      }
+      .context-menu {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+      }
+      .context-menu.show {
+        display: block;
+      }
+      .context-menu-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        whitespace: nowrap;
+      }
+      .context-menu-item:hover {
+        background-color: #334155;
+      }
+      .breadcrumb-item {
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+      }
+      .breadcrumb-item:hover {
+        background-color: rgba(51, 65, 85, 0.5);
+      }
+
+      /* Mobile responsive styles */
+      @media (max-width: 768px) {
+        header {
+          padding: 0.75rem;
+        }
+        header .flex {
+          flex-wrap: nowrap;
+          gap: 0.5rem;
+        }
+        header span,
+        header a {
+          font-size: 0.875rem;
+        }
+        #client-id-header {
+          display: none;
+        }
+        main {
+          padding: 1rem 0.5rem;
+        }
+        .file-header {
+          display: none !important;
+        }
+        #file-list .file-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 0.75rem !important;
+        }
+        #file-list .file-item > div {
+          width: 100% !important;
+        }
+        #file-list .file-item .file-size-col,
+        #file-list .file-item .file-modified-col {
+          display: none;
+        }
+        .file-meta {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.75rem;
+          color: rgb(148 163 184);
+          margin-top: 0.25rem;
+        }
+        .action-buttons {
+          display: flex;
+          gap: 0.5rem;
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .action-buttons button {
+          font-size: 0.875rem;
+          padding: 0.5rem 0.75rem;
+        }
+      }
+
+      /* File editor modal styles */
+      .file-editor-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        display: none;
+      }
+      .file-editor-modal.show {
+        display: flex;
+      }
+      .file-editor-content {
+        background-color: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 0.75rem;
+        width: 90%;
+        max-width: 1200px;
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+      }
+      .file-editor-content > div:nth-child(3) {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      #editor-textarea {
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        tab-size: 4;
+        white-space: pre;
+        color: #e2e8f0;
+        background-color: #0f172a;
+      }
+      #editor-textarea::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+      }
+      #editor-textarea::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
+      #editor-textarea::-webkit-scrollbar-thumb {
+        background: #475569;
+        border-radius: 6px;
+      }
+      #editor-textarea::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+      }
+      #editor-preview {
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        tab-size: 4;
+        white-space: pre;
+        margin: 0;
+        background-color: #0f172a;
+        scrollbar-color: #1e293b #0f172a; /* Firefox */
+        scrollbar-width: thin; /* Firefox */
+      }
+      #editor-preview::-webkit-scrollbar {
+        width: 12px !important;
+        height: 12px !important;
+      }
+      #editor-preview::-webkit-scrollbar-track {
+        background: #0f172a !important;
+      }
+      #editor-preview::-webkit-scrollbar-thumb {
+        background: #1e293b !important;
+        border-radius: 6px;
+      }
+      #editor-preview::-webkit-scrollbar-thumb:hover {
+        background: #334155 !important;
+      }
+      #editor-preview::-webkit-scrollbar-corner {
+        background: #0f172a !important;
+      }
+      /* Ensure scrollbars on both axes */
+      #editor-preview * {
+        scrollbar-color: inherit !important;
+        scrollbar-width: inherit !important;
+      }
+      #editor-preview code {
+        background: transparent !important;
+        padding: 0 !important;
+      }
+      .bulk-actions-bar {
+        background-color: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+      }
+    </style>
+    <script src="/assets/toast.js"></script>
+    <script src="/assets/ripple.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+
+    <main class="px-5 py-6">
+      <div class="max-w-7xl mx-auto flex flex-col gap-5">
+        <!-- Status Bar -->
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span
+              id="status-indicator"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-800 text-slate-300"
+            >
+              <i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...
+            </span>
+            <span
+              id="client-id-header"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-900/60 text-slate-200 border border-slate-800"
+            >
+              <i class="fa-solid fa-computer"></i>
+              <span>Loading client...</span>
+            </span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              id="search-btn"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+              disabled
+            >
+              <i class="fa-solid fa-search"></i> Search
+            </button>
+            <button
+              id="refresh-btn"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+              disabled
+            >
+              <i class="fa-solid fa-refresh"></i> Refresh
+            </button>
+            <button
+              id="upload-btn"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white"
+              disabled
+            >
+              <i class="fa-solid fa-upload"></i> Upload File
+            </button>
+            <button
+              id="mkdir-btn"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white"
+              disabled
+            >
+              <i class="fa-solid fa-folder-plus"></i> New Folder
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar (hidden by default) -->
+        <div
+          id="search-bar"
+          class="hidden px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg"
+        >
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-search text-slate-400"></i>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Search files or content..."
+              class="flex-1 bg-transparent outline-none text-sm text-slate-100 placeholder:text-slate-500"
+            />
+            <label
+              class="inline-flex items-center gap-2 text-sm text-slate-300"
+            >
+              <input
+                type="checkbox"
+                id="search-content-checkbox"
+                class="rounded"
+              />
+              <span>Search in files</span>
+            </label>
+            <button
+              id="search-execute-btn"
+              class="inline-flex items-center px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
+            >
+              Search
+            </button>
+            <button
+              id="search-close-btn"
+              class="inline-flex items-center px-2 py-1 rounded hover:bg-slate-700 text-slate-400"
+            >
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bulk Actions Bar (hidden by default) -->
+        <div
+          id="bulk-actions-bar"
+          class="hidden bulk-actions-bar px-4 py-3 rounded-lg"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium"
+              ><span id="selected-count">0</span> items selected</span
+            >
+            <div class="flex items-center gap-2">
+              <button
+                id="bulk-download-btn"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              >
+                <i class="fa-solid fa-download"></i> Download
+              </button>
+              <button
+                id="bulk-delete-btn"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
+              >
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+              <button
+                id="bulk-move-btn"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-sm"
+              >
+                <i class="fa-solid fa-arrows-alt"></i> Move
+              </button>
+              <button
+                id="bulk-copy-btn"
+                class="inline-flex items-center gap-2 px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-sm"
+              >
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+              <button
+                id="clear-selection-btn"
+                class="inline-flex items-center px-2 py-1 rounded hover:bg-slate-700 text-slate-300 text-sm"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Path Navigation Bar -->
+        <div
+          class="flex items-center gap-2 px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg"
+        >
+          <button
+            id="back-btn"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300"
+            title="Go back"
+          >
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <button
+            id="home-btn"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300"
+            title="Go to home/root"
+          >
+            <i class="fa-solid fa-home"></i>
+          </button>
+          <div
+            class="flex-1 flex items-center gap-2 px-3 py-2 bg-slate-950/50 border border-slate-700 rounded"
+          >
+            <i class="fa-solid fa-folder-open text-yellow-400 text-sm"></i>
+            <input
+              type="text"
+              id="path-input"
+              placeholder="Enter path (e.g., C:\, /home, .)"
+              class="flex-1 bg-transparent outline-none text-sm text-slate-100 placeholder:text-slate-500"
+              spellcheck="false"
+            />
+            <button
+              id="path-go-btn"
+              class="inline-flex items-center px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs"
+            >
+              Go
+            </button>
+          </div>
+        </div>
+
+        <!-- Breadcrumb Navigation -->
+        <div
+          class="flex items-center gap-2 px-4 py-3 bg-slate-900/70 border border-slate-800 rounded-lg overflow-x-auto"
+        >
+          <i class="fa-solid fa-folder-open text-yellow-400"></i>
+          <div id="breadcrumb" class="flex items-center gap-1 text-sm"></div>
+        </div>
+
+        <!-- File List -->
+        <div
+          class="bg-slate-900/70 border border-slate-800 rounded-lg overflow-hidden"
+        >
+          <div
+            class="file-header grid grid-cols-12 gap-3 px-4 py-3 bg-slate-800 border-b border-slate-700 text-xs font-semibold uppercase text-slate-400"
+          >
+            <div class="col-span-6">Name</div>
+            <div class="col-span-2">Size</div>
+            <div class="col-span-3">Modified</div>
+            <div class="col-span-1 text-right">Actions</div>
+          </div>
+          <div id="file-list" class="divide-y divide-slate-800">
+            <!-- Files will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+      <div class="context-menu-item" data-action="edit">
+        <i class="fa-solid fa-edit mr-2"></i> Edit
+      </div>
+      <div class="context-menu-item" data-action="download">
+        <i class="fa-solid fa-download mr-2"></i> Download
+      </div>
+      <div class="context-menu-item" data-action="zip">
+        <i class="fa-solid fa-file-zipper mr-2"></i> Zip & Download
+      </div>
+      <div class="context-menu-item" data-action="copy">
+        <i class="fa-solid fa-copy mr-2"></i> Copy
+      </div>
+      <div class="context-menu-item" data-action="move">
+        <i class="fa-solid fa-arrows-alt mr-2"></i> Move
+      </div>
+      <div class="context-menu-item" data-action="chmod">
+        <i class="fa-solid fa-lock mr-2"></i> Permissions
+      </div>
+      <div class="context-menu-item text-red-400" data-action="delete">
+        <i class="fa-solid fa-trash mr-2"></i> Delete
+      </div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div id="file-editor-modal" class="file-editor-modal">
+      <div class="file-editor-content">
+        <div
+          class="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-file-code text-blue-400"></i>
+            <span class="font-semibold" id="editor-file-name"
+              >Editing File</span
+            >
+          </div>
+          <button id="editor-close-btn" class="hover:text-red-400">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div
+          class="px-4 py-2 bg-slate-900 border-b border-slate-700 flex items-center justify-between gap-2"
+        >
+          <div class="flex items-center gap-2">
+            <button
+              id="editor-edit-tab"
+              class="px-3 py-1 rounded bg-blue-600 text-white text-sm"
+            >
+              Edit
+            </button>
+            <button
+              id="editor-preview-tab"
+              class="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm"
+            >
+              Preview
+            </button>
+          </div>
+          <button
+            id="editor-run-btn"
+            class="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-sm flex items-center gap-1"
+            title="Execute file"
+          >
+            <i class="fa-solid fa-play"></i> Run
+          </button>
+        </div>
+        <div class="flex-1 overflow-hidden p-4">
+          <textarea
+            id="editor-textarea"
+            class="w-full h-full p-4 rounded border border-slate-700 resize-none focus:outline-none focus:border-blue-500"
+            spellcheck="false"
+          ></textarea>
+          <pre
+            id="editor-preview"
+            class="w-full h-full overflow-auto rounded border border-slate-700 p-4 hidden"
+          ><code id="editor-code" class="language-javascript"></code></pre>
+        </div>
+        <div
+          class="px-4 py-3 bg-slate-800 border-t border-slate-700 flex items-center justify-between"
+        >
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <span id="editor-status">Ready</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              id="editor-cancel-btn"
+              class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              Cancel
+            </button>
+            <button
+              id="editor-save-btn"
+              class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <i class="fa-solid fa-save mr-2"></i> Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer Progress Panel -->
+    <div
+      id="transfer-panel"
+      class="hidden fixed bottom-4 right-4 w-96 max-w-full bg-slate-900 border border-slate-700 rounded-lg shadow-2xl overflow-hidden z-50"
+    >
+      <div
+        class="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-arrow-up-arrow-down"></i>
+          <span class="font-semibold">File Transfers</span>
+        </div>
+      </div>
+      <div id="transfer-list" class="p-3 max-h-96 overflow-y-auto space-y-2">
+        <!-- Transfer items will be added here -->
+      </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <input type="file" id="file-input" style="display: none" multiple />
+
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/filebrowser.js"></script>
+  </body>
+</html>

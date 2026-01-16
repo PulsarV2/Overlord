@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Script Execution - Overlord</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+    <script src="/assets/toast.js"></script>
+    <script src="/assets/ripple.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Client Selector -->
+        <div class="lg:col-span-3">
+          <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold">Select Target Clients</h2>
+              <div class="flex items-center gap-2 text-sm text-slate-400">
+                <span id="selected-count">0 selected</span>
+                <button id="clear-selection-btn" class="px-3 py-1 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors">
+                  <i class="fa-solid fa-xmark"></i> Clear
+                </button>
+              </div>
+            </div>
+            
+            <!-- Search and Filters -->
+            <div class="flex gap-3 mb-4">
+              <div class="flex-1 relative">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <input
+                  id="client-search"
+                  type="text"
+                  placeholder="Search by hostname, ID, or OS..."
+                  class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <select
+                id="os-filter"
+                class="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-100"
+              >
+                <option value="all">All OS</option>
+              </select>
+              <button
+                id="select-all-btn"
+                class="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors whitespace-nowrap"
+              >
+                <i class="fa-solid fa-check-double"></i> Select All
+              </button>
+            </div>
+            
+            <!-- Client List -->
+            <div id="client-list" class="max-h-64 overflow-y-auto border border-slate-700 rounded-lg bg-slate-950">
+              <div class="p-4 text-center text-slate-500">Loading clients...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Script Editor -->
+        <div class="lg:col-span-2">
+          <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold">Script Editor</h2>
+              <div class="flex items-center gap-2">
+                <select
+                  id="script-type"
+                  class="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800 text-slate-100"
+                >
+                  <option value="powershell">PowerShell</option>
+                  <option value="bash">Bash</option>
+                  <option value="cmd">CMD</option>
+                  <option value="python">Python</option>
+                  <option value="sh">Shell (sh)</option>
+                </select>
+                <button
+                  id="execute-btn"
+                  class="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <i class="fa-solid fa-play"></i> Execute
+                </button>
+              </div>
+            </div>
+            <textarea
+              id="script-editor"
+              class="w-full h-96 px-4 py-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Enter your script here..."
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div class="lg:col-span-1">
+          <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-6">
+            <h2 class="text-xl font-semibold mb-4">Script Templates</h2>
+            <div class="space-y-2">
+              <button
+                class="template-btn w-full text-left px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors"
+                data-type="powershell"
+                data-script="Get-ComputerInfo | Select-Object CsName, WindowsVersion, OsArchitecture, CsProcessors"
+              >
+                <div class="font-semibold">System Info</div>
+                <div class="text-sm text-slate-400">
+                  Get computer information
+                </div>
+              </button>
+              <button
+                class="template-btn w-full text-left px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors"
+                data-type="powershell"
+                data-script="Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 Name, CPU, WorkingSet"
+              >
+                <div class="font-semibold">Top Processes</div>
+                <div class="text-sm text-slate-400">
+                  Show top 10 processes by CPU
+                </div>
+              </button>
+              <button
+                class="template-btn w-full text-left px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors"
+                data-type="powershell"
+                data-script="Get-NetIPAddress | Where-Object {$_.AddressFamily -eq 'IPv4'} | Select-Object IPAddress, InterfaceAlias"
+              >
+                <div class="font-semibold">Network Info</div>
+                <div class="text-sm text-slate-400">
+                  List network adapters and IPs
+                </div>
+              </button>
+              <button
+                class="template-btn w-full text-left px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors"
+                data-type="bash"
+                data-script="df -h"
+              >
+                <div class="font-semibold">Disk Usage</div>
+                <div class="text-sm text-slate-400">
+                  Show disk space (Linux)
+                </div>
+              </button>
+              <button
+                class="template-btn w-full text-left px-4 py-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 transition-colors"
+                data-type="bash"
+                data-script="top -bn1 | head -20"
+              >
+                <div class="font-semibold">System Status</div>
+                <div class="text-sm text-slate-400">
+                  Show system status (Linux)
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Output -->
+        <div class="lg:col-span-3">
+          <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-semibold">Output</h2>
+              <button
+                id="clear-output-btn"
+                class="px-4 py-2 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-700 text-sm"
+              >
+                <i class="fa-solid fa-trash"></i> Clear
+              </button>
+            </div>
+            <div
+              id="output-container"
+              class="min-h-64 max-h-96 overflow-auto px-4 py-3 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 font-mono text-sm whitespace-pre-wrap"
+            >
+              <div class="text-slate-500">
+                No output yet. Execute a script to see results.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/scripts.js"></script>
+  </body>
+</html>

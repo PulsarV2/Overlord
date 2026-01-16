@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overlord Plugins</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+    <main class="px-5 py-6">
+      <div class="max-w-5xl mx-auto flex flex-col gap-5">
+        <div>
+          <h1 class="text-2xl font-semibold">Plugins</h1>
+          <p class="text-slate-400">Upload zip bundles and manage plugin UI</p>
+        </div>
+
+        <section class="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="text-lg font-semibold">Upload</h2>
+              <p class="text-slate-400 text-sm">Drag a plugin zip here or click to browse</p>
+            </div>
+            <label
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-700 hover:bg-slate-700 cursor-pointer"
+            >
+              <i class="fa-solid fa-upload"></i>
+              <span>Choose zip</span>
+              <input id="file-input" type="file" accept=".zip" class="hidden" />
+            </label>
+          </div>
+          <div
+            id="dropzone"
+            class="mt-4 border-2 border-dashed border-slate-700 rounded-xl p-8 text-center text-slate-400"
+          >
+            Drop plugin zip here
+          </div>
+          <div id="upload-status" class="mt-3 text-sm text-slate-400"></div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Installed plugins</h2>
+            <button
+              id="refresh-btn"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/70 border border-slate-700 hover:bg-slate-700"
+            >
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+          </div>
+          <div id="plugin-list" class="mt-4 grid gap-3"></div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/plugins.js"></script>
+  </body>
+</html>

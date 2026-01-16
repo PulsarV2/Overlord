@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample Plugin</title>
+    <link rel="stylesheet" href="/plugins/sample/assets/sample.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>Sample Plugin</h1>
+        <p class="sub">Go WASM + UI plugin</p>
+      </header>
+
+      <section class="card">
+        <div class="row">
+          <label class="label">Client ID</label>
+          <input id="client-id" class="input" placeholder="clientId" />
+        </div>
+
+        <div class="row">
+          <label class="label">Message</label>
+          <input id="message" class="input" placeholder="hello from UI" />
+        </div>
+
+        <div class="row">
+          <label class="label">Message Box</label>
+          <input id="msgbox" class="input" placeholder="Windows only" />
+        </div>
+
+        <div class="actions">
+          <button id="send-btn" class="btn">Send event to client</button>
+          <button id="ping-btn" class="btn">Ping Test x100</button>
+          <button id="msgbox-btn" class="btn">Show Message Box</button>
+          <button id="run-cmd-btn" class="btn">Run Command (example)</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Log</h2>
+        <pre id="log" class="log"></pre>
+      </section>
+    </main>
+
+    <script src="/plugins/sample/assets/sample.js"></script>
+  </body>
+</html>

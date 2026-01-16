@@ -1,0 +1,6 @@
+go 1.24
+
+use (
+	./Overlord-Client
+	./plugin-sample-go/wasm
+)

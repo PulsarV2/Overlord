@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client Builder - Overlord</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f172a'/%3E%3Cpath d='M18 44l7-22h4l7 22h-4l-1.4-4.5h-7.2L22 44h-4zm8.3-8.2h5.4L30 24.5h-.2l-3.5 11.3zM44 22h4v20h-4V22z' fill='%23a5b4fc'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/assets/toast.js"></script>
+    <script src="/assets/ripple.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+    <main class="px-5 py-6">
+      <div class="max-w-6xl mx-auto flex flex-col gap-5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 class="text-2xl font-semibold">Client Builder</h1>
+            <p class="text-slate-400">
+              Build customized Overlord client agents
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Build Configuration -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-lg p-5">
+            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-gear"></i> Build Configuration
+            </h2>
+
+            <form id="build-form" class="flex flex-col gap-4">
+              <!-- Platform Selection -->
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2"
+                  >Target Platform</label
+                >
+                <div class="grid grid-cols-2 gap-2">
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="windows-amd64"
+                      class="w-4 h-4"
+                      checked
+                    />
+                    <span
+                      ><i class="fa-brands fa-windows"></i> Windows x64</span
+                    >
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="windows-arm64"
+                      class="w-4 h-4"
+                    />
+                    <span
+                      ><i class="fa-brands fa-windows"></i> Windows ARM64</span
+                    >
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="linux-amd64"
+                      class="w-4 h-4"
+                    />
+                    <span><i class="fa-brands fa-linux"></i> Linux x64</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="linux-arm64"
+                      class="w-4 h-4"
+                    />
+                    <span><i class="fa-brands fa-linux"></i> Linux ARM64</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="linux-armv7"
+                      class="w-4 h-4"
+                    />
+                    <span><i class="fa-brands fa-linux"></i> Linux ARMv7</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-blue-500 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      name="platform"
+                      value="darwin-arm64"
+                      class="w-4 h-4"
+                    />
+                    <span><i class="fa-brands fa-apple"></i> macOS ARM64</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Server URL -->
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-300 mb-2"
+                  for="server-url"
+                >
+                  Server URL
+                </label>
+                <input
+                  type="text"
+                  id="server-url"
+                  name="server-url"
+                  placeholder="wss://your-server:5173"
+                  class="w-full px-3 py-2 bg-slate-800/60 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p class="text-xs text-slate-500 mt-1">
+                  Optional: Override the default server URL in the build
+                </p>
+              </div>
+
+              <!-- Custom ID -->
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-300 mb-2"
+                  for="custom-id"
+                >
+                  Custom Client ID
+                </label>
+                <input
+                  type="text"
+                  id="custom-id"
+                  name="custom-id"
+                  placeholder="Leave empty for auto-generated"
+                  class="w-full px-3 py-2 bg-slate-800/60 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p class="text-xs text-slate-500 mt-1">
+                  Optional: Set a custom client ID
+                </p>
+              </div>
+
+              <!-- Country Code -->
+              <div>
+                <label
+                  class="block text-sm font-medium text-slate-300 mb-2"
+                  for="country-code"
+                >
+                  Country Code
+                </label>
+                <input
+                  type="text"
+                  id="country-code"
+                  name="country-code"
+                  placeholder="US"
+                  maxlength="2"
+                  class="w-full px-3 py-2 bg-slate-800/60 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                />
+                <p class="text-xs text-slate-500 mt-1">
+                  Optional: 2-letter country code
+                </p>
+              </div>
+
+              <!-- Build Options -->
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2"
+                  >Build Options</label
+                >
+                <div class="flex flex-col gap-2">
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      name="strip-debug"
+                      class="w-4 h-4"
+                      checked
+                    />
+                    <span>Strip debug symbols (-s -w)</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      name="disable-cgo"
+                      class="w-4 h-4"
+                      checked
+                    />
+                    <span>Disable CGO</span>
+                  </label>
+                  <label
+                    class="flex items-center gap-2 p-3 bg-slate-800/60 border border-slate-700 rounded-lg cursor-pointer hover:border-orange-500 transition-colors"
+                    title="Enable automatic startup on system boot (disabled by default for security)"
+                  >
+                    <input
+                      type="checkbox"
+                      name="enable-persistence"
+                      class="w-4 h-4"
+                    />
+                    <div class="flex flex-col">
+                      <span class="flex items-center gap-2"
+                        ><i class="fa-solid fa-power-off text-orange-400"></i>
+                        Enable Persistence (Auto-start)</span
+                      >
+                      <span class="text-xs text-slate-500"
+                        >Agent will start automatically with system boot</span
+                      >
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Build Button -->
+              <button
+                type="submit"
+                id="build-btn"
+                class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <i class="fa-solid fa-hammer"></i>
+                <span>Start Build</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Build Output -->
+          <div class="bg-slate-900/70 border border-slate-800 rounded-lg p-5">
+            <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-terminal"></i> Build Output
+            </h2>
+
+            <div id="build-status" class="mb-4 hidden">
+              <div
+                class="flex items-center gap-2 p-3 rounded-lg bg-blue-900/40 border border-blue-700/60"
+              >
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span id="build-status-text">Building...</span>
+              </div>
+            </div>
+
+            <div
+              id="build-output-container"
+              class="bg-slate-950 border border-slate-700 rounded-lg p-4 h-96 overflow-y-auto font-mono text-sm"
+            >
+              <div id="build-output" class="text-slate-400">
+                Ready to build. Select platforms and click "Start Build".
+              </div>
+            </div>
+
+            <!-- Build Results -->
+            <div id="build-results" class="mt-4 hidden">
+              <h3 class="font-medium mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-download"></i> Built Clients
+              </h3>
+              <div id="build-files" class="flex flex-col gap-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/build.js"></script>
+  </body>
+</html>

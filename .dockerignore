@@ -1,0 +1,38 @@
+# Node/Bun
+node_modules/
+.next/
+.cache/
+dist/
+.tmp/
+
+# Database
+*.db
+*.db-journal
+
+# Configuration (contains secrets)
+config.json
+
+# Certificates
+certs/
+*.crt
+*.key
+*.pem
+*.csr
+
+# OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build outputs
+dist-clients/
+
+# Logs
+*.log
+logs/

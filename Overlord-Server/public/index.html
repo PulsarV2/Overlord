@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overlord Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flag-icons@6.15.0/css/flag-icons.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f172a'/%3E%3Cpath d='M18 44l7-22h4l7 22h-4l-1.4-4.5h-7.2L22 44h-4zm8.3-8.2h5.4L30 24.5h-.2l-3.5 11.3zM44 22h4v20h-4V22z' fill='%23a5b4fc'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+    <main class="px-5 py-6">
+      <div class="max-w-6xl mx-auto flex flex-col gap-5">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 class="text-2xl font-semibold">Clients</h1>
+            <p class="text-slate-400">Live clients via Bun WebSockets</p>
+          </div>
+          <span
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-blue-900/40 text-blue-100 border border-blue-700/60"
+            id="total-pill"
+            >0 online</span
+          >
+        </div>
+        <div class="flex flex-wrap gap-3 items-center">
+          <label
+            class="flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 w-full sm:w-auto flex-1"
+          >
+            <i class="fa-solid fa-magnifying-glass text-slate-500"></i>
+            <input
+              id="search"
+              class="bg-transparent outline-none w-full placeholder:text-slate-500"
+              type="search"
+              placeholder="Search by host, user, id"
+            />
+          </label>
+          <select
+            id="filter-status"
+            class="bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+          >
+            <option value="all">All Status</option>
+            <option value="online">Online Only</option>
+            <option value="offline">Offline Only</option>
+          </select>
+          <select
+            id="filter-os"
+            class="bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+          >
+            <option value="all">All OS</option>
+          </select>
+          <select
+            id="sort"
+            class="bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 text-slate-100"
+          >
+            <option value="last_seen_desc">Newest</option>
+            <option value="host_asc">Host A→Z</option>
+            <option value="ping_asc">Ping ↑</option>
+            <option value="ping_desc">Ping ↓</option>
+          </select>
+        </div>
+        <!-- Bulk Actions Toolbar -->
+        <div
+          id="bulk-toolbar"
+          class="hidden bg-indigo-900/40 border border-indigo-700/60 rounded-lg p-3 flex items-center justify-between gap-3"
+        >
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-check-double text-indigo-300"></i>
+            <span class="text-indigo-100"
+              ><span id="selected-count">0</span> selected</span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              id="bulk-screenshot"
+              class="px-3 py-2 rounded-lg bg-indigo-800/60 hover:bg-indigo-700 text-indigo-100 border border-indigo-600 transition-colors"
+            >
+              <i class="fa-solid fa-camera"></i> Screenshot
+            </button>
+            <button
+              id="bulk-disconnect"
+              class="px-3 py-2 rounded-lg bg-red-800/60 hover:bg-red-700 text-red-100 border border-red-600 transition-colors"
+            >
+              <i class="fa-solid fa-plug-circle-xmark"></i> Disconnect
+            </button>
+            <button
+              id="bulk-clear"
+              class="px-3 py-2 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-300 border border-slate-600 transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <div id="grid" class="flex flex-col gap-3"></div>
+        <div class="flex items-center justify-center gap-3 py-4">
+          <button
+            id="prev"
+            class="px-4 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:bg-slate-700 disabled:opacity-40"
+            disabled
+          >
+            Prev
+          </button>
+          <span class="text-slate-400" id="page-label"></span>
+          <button
+            id="next"
+            class="px-4 py-2 rounded-lg border border-slate-800 bg-slate-800/60 hover:bg-slate-700 disabled:opacity-40"
+            disabled
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/assets/nav.js"></script>
+    <script src="/assets/toast.js"></script>
+    <script src="/assets/ripple.js"></script>
+    <script type="module" src="/assets/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,62 @@
+services:
+  overlord-server:
+    # Build from source by default (for local development/testing)
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Optionally use pre-built image from registry (set DOCKER_IMAGE env var)
+    image: ${DOCKER_IMAGE:-overlord-server:local}
+    container_name: overlord-server
+    ports:
+      - "${PORT:-5173}:5173"
+    environment:
+      PORT: ${PORT:-5173}
+      HOST: ${HOST:-0.0.0.0}
+      # Initial admin account (you'll be forced to change password on first login)
+      OVERLORD_USER: ${OVERLORD_USER:-admin}
+      OVERLORD_PASS: ${OVERLORD_PASS:-admin}
+      # JWT secret will be auto-generated if not set
+      JWT_SECRET: ${JWT_SECRET:-}
+      NODE_ENV: ${NODE_ENV:-production}
+      OVERLORD_TLS_CERT: ${OVERLORD_TLS_CERT:-/app/certs/server.crt}
+      OVERLORD_TLS_KEY: ${OVERLORD_TLS_KEY:-/app/certs/server.key}
+      OVERLORD_TLS_CA: ${OVERLORD_TLS_CA:-}
+    volumes:
+      - overlord-data:/app/data
+      - overlord-certs:/app/certs
+      # Uncomment to use a static config file instead of env vars
+      # - ./Overlord-Server/config.json:/app/config.json:ro
+    restart: unless-stopped
+    networks:
+      - overlord-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:5173/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  agent-builder:
+    build:
+      context: .
+      dockerfile: docker/agent-builder.Dockerfile
+    image: overlord/agent-builder:local
+    container_name: overlord-agent-builder
+    profiles: ["builder"]
+    environment:
+      TARGETS: ${TARGETS:-windows/amd64,windows/arm64,linux/amd64,linux/arm64,linux/arm/v7,darwin/arm64}
+      OUT_DIR: /out
+      LDFLAGS: "${LDFLAGS:--s -w}"
+      GO_BUILD_FLAGS: "${GO_BUILD_FLAGS:--trimpath}"
+    volumes:
+      - ./dist-clients:/out
+    networks:
+      - overlord-network
+
+networks:
+  overlord-network:
+    driver: bridge
+
+volumes:
+  overlord-data:
+  overlord-certs:

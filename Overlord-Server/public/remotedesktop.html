@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overlord Remote Desktop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+    <link rel="stylesheet" href="/assets/console.css" />
+    <script src="/assets/logout.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+
+    <main class="px-5 py-6 flex-1 flex flex-col">
+      <div class="flex-1 flex flex-col gap-4" style="max-width: 100%">
+        <div class="flex flex-wrap gap-3 items-center">
+          <div
+            class="bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 flex items-center gap-3"
+          >
+            <label class="text-sm text-slate-300" for="displaySelect"
+              >Display</label
+            >
+            <select
+              id="displaySelect"
+              class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-100"
+            ></select>
+            <button id="refreshDisplays" class="button ghost">
+              <i class="fa-solid fa-rotate"></i><span>Refresh</span>
+            </button>
+          </div>
+          <div
+            class="bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 flex items-center gap-3 text-sm text-slate-300"
+          >
+            <label for="qualitySlider" class="text-slate-200">Quality</label>
+            <input
+              id="qualitySlider"
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              value="95"
+              class="accent-emerald-400"
+            />
+            <span id="qualityValue" class="pill pill-ghost text-slate-100"
+              >95%</span
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="startBtn" class="button primary">
+              <i class="fa-solid fa-play"></i><span>Start</span>
+            </button>
+            <button id="stopBtn" class="button ghost">
+              <i class="fa-solid fa-stop"></i><span>Stop</span>
+            </button>
+            <button id="fullscreenBtn" class="button ghost">
+              <i class="fa-solid fa-expand"></i><span>Fullscreen</span>
+            </button>
+          </div>
+          <div
+            class="flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300"
+          >
+            <span class="uppercase tracking-wide text-xs text-slate-500"
+              >fps</span
+            >
+            <span
+              id="agentFps"
+              class="pill pill-ghost font-mono text-emerald-200"
+              >--</span
+            >
+            <span class="text-slate-600">→</span>
+            <span id="viewerFps" class="pill pill-ghost font-mono text-sky-200"
+              >--</span
+            >
+          </div>
+          <div
+            class="flex items-center gap-4 bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2"
+          >
+            <label class="flex items-center gap-2 text-sm text-slate-200"
+              ><input type="checkbox" id="mouseCtrl" /> Mouse</label
+            >
+            <label class="flex items-center gap-2 text-sm text-slate-200"
+              ><input type="checkbox" id="kbdCtrl" /> Keyboard</label
+            >
+            <label class="flex items-center gap-2 text-sm text-slate-200" title="Show mouse cursor in captured frames"
+              ><input type="checkbox" id="cursorCtrl" /> Cursor</label
+            >
+          </div>
+        </div>
+
+        <div
+          id="canvasContainer"
+          class="flex-1 rounded-xl border border-slate-800 bg-slate-900/70 shadow-lg overflow-hidden flex flex-col"
+          style="min-height: 500px"
+        >
+          <div class="p-3 text-sm text-slate-400 flex-shrink-0">
+            Client: <span id="clientLabel" class="text-slate-100">-</span>
+          </div>
+          <div
+            class="flex-1 flex items-center justify-center p-4"
+            style="min-height: 0; overflow: hidden"
+          >
+            <canvas
+              id="frameCanvas"
+              class="bg-slate-950"
+              width="1280"
+              height="720"
+              style="
+                display: block;
+                max-width: 100%;
+                max-height: 100%;
+                width: auto;
+                height: auto;
+              "
+            ></canvas>
+          </div>
+        </div>
+        <style>
+          body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+          }
+          #canvasContainer:fullscreen {
+            display: flex;
+            flex-direction: column;
+            background: #000;
+          }
+          #canvasContainer:fullscreen #frameCanvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            margin: auto;
+          }
+        </style>
+      </div>
+    </main>
+
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/remotedesktop.js"></script>
+  </body>
+</html>

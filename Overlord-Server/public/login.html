@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Overlord Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="/assets/main.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body class="login-body">
+    <div class="login-particles">
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+    </div>
+    <div class="login-card">
+      <div class="login-crown-wrapper">
+        <i class="fa-solid fa-crown login-crown"></i>
+      </div>
+      <div class="brand login-brand">Overlord</div>
+      <h2 class="login-title">Sign in</h2>
+      <p class="muted login-subtitle">
+        "You can bring the heat but you can't beat this meat" - KDot
+      </p>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="label">Username</label>
+          <div class="input-row input-animated">
+            <i class="fa-solid fa-user"></i
+            ><input
+              id="user"
+              name="user"
+              type="text"
+              autocomplete="username"
+              required
+              placeholder="Enter username"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label">Password</label>
+          <div class="input-row input-animated">
+            <i class="fa-solid fa-lock"></i
+            ><input
+              id="pass"
+              name="pass"
+              type="password"
+              autocomplete="current-password"
+              required
+              placeholder="Enter password"
+            />
+          </div>
+        </div>
+        <button type="submit" class="button primary full login-btn">
+          <span class="btn-text">Sign in</span>
+          <i class="fa-solid fa-arrow-right btn-icon"></i>
+        </button>
+        <div id="error" class="error" aria-live="polite"></div>
+      </form>
+    </div>
+    <script type="module" src="/assets/login.js"></script>
+  </body>
+</html>
