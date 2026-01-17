@@ -4,6 +4,7 @@ import type {
   RemoteDesktopViewer,
   FileBrowserViewer,
   ProcessViewer,
+  NotificationsViewer,
   SocketData,
 } from "./types";
 
@@ -11,6 +12,7 @@ const consoleSessions = new Map<string, ConsoleSession>();
 const rdSessions = new Map<string, RemoteDesktopViewer>();
 const fileBrowserSessions = new Map<string, FileBrowserViewer>();
 const processSessions = new Map<string, ProcessViewer>();
+const notificationSessions = new Map<string, NotificationsViewer>();
 
 export function addConsoleSession(session: ConsoleSession): void {
   consoleSessions.set(session.id, session);
@@ -108,6 +110,18 @@ export function getAllProcessSessions(): Map<string, ProcessViewer> {
   return processSessions;
 }
 
+export function addNotificationSession(session: NotificationsViewer): void {
+  notificationSessions.set(session.id, session);
+}
+
+export function deleteNotificationSession(sessionId: string): boolean {
+  return notificationSessions.delete(sessionId);
+}
+
+export function getAllNotificationSessions(): Map<string, NotificationsViewer> {
+  return notificationSessions;
+}
+
 export function getConsoleSessionCount(): number {
   return consoleSessions.size;
 }
@@ -122,6 +136,10 @@ export function getFileBrowserSessionCount(): number {
 
 export function getProcessSessionCount(): number {
   return processSessions.size;
+}
+
+export function getNotificationSessionCount(): number {
+  return notificationSessions.size;
 }
 
 export function safeSendViewer(

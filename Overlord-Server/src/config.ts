@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import { writeFile, mkdir } from "fs/promises";
 import { resolve } from "path";
 import logger from "./logger";
 
@@ -18,6 +19,13 @@ export interface Config {
     keyPath: string;
     caPath: string;
   };
+  notifications: {
+    keywords: string[];
+    minIntervalMs: number;
+    spamWindowMs: number;
+    spamWarnThreshold: number;
+    historyLimit: number;
+  };
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -35,6 +43,13 @@ const DEFAULT_CONFIG: Config = {
     certPath: "./certs/server.crt",
     keyPath: "./certs/server.key",
     caPath: "",
+  },
+  notifications: {
+    keywords: [],
+    minIntervalMs: 8000,
+    spamWindowMs: 60000,
+    spamWarnThreshold: 5,
+    historyLimit: 200,
   },
 };
 
@@ -97,6 +112,14 @@ export function loadConfig(): Config {
     fileConfig.auth?.agentToken ||
     DEFAULT_CONFIG.auth.agentToken;
 
+  const keywordsEnv = process.env.OVERLORD_NOTIFICATION_KEYWORDS;
+  const keywordsFromEnv = keywordsEnv
+    ? keywordsEnv
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean)
+    : [];
+
   const finalAgentToken = agentToken || generateAgentToken();
   
   if (!agentToken) {
@@ -142,6 +165,29 @@ export function loadConfig(): Config {
         fileConfig.tls?.caPath ||
         DEFAULT_CONFIG.tls.caPath,
     },
+    notifications: {
+      keywords:
+        keywordsFromEnv.length > 0
+          ? keywordsFromEnv
+          : (fileConfig.notifications?.keywords ||
+              DEFAULT_CONFIG.notifications.keywords),
+      minIntervalMs:
+        Number(process.env.OVERLORD_NOTIFICATION_MIN_INTERVAL_MS) ||
+        fileConfig.notifications?.minIntervalMs ||
+        DEFAULT_CONFIG.notifications.minIntervalMs,
+      spamWindowMs:
+        Number(process.env.OVERLORD_NOTIFICATION_SPAM_WINDOW_MS) ||
+        fileConfig.notifications?.spamWindowMs ||
+        DEFAULT_CONFIG.notifications.spamWindowMs,
+      spamWarnThreshold:
+        Number(process.env.OVERLORD_NOTIFICATION_SPAM_WARN_THRESHOLD) ||
+        fileConfig.notifications?.spamWarnThreshold ||
+        DEFAULT_CONFIG.notifications.spamWarnThreshold,
+      historyLimit:
+        Number(process.env.OVERLORD_NOTIFICATION_HISTORY_LIMIT) ||
+        fileConfig.notifications?.historyLimit ||
+        DEFAULT_CONFIG.notifications.historyLimit,
+    },
   };
 
   if (
@@ -159,6 +205,18 @@ export function loadConfig(): Config {
     );
   }
 
+  if (!jwtSecret && !process.env.JWT_SECRET) {
+    try {
+      const configPath = resolve(process.cwd(), "config.json");
+      const nextConfig = fileConfig || {};
+      nextConfig.auth = { ...(nextConfig.auth || {}), jwtSecret: finalJwtSecret };
+      writeFileSync(configPath, JSON.stringify(nextConfig, null, 2));
+      logger.info("Persisted generated JWT secret to config.json");
+    } catch (error) {
+      logger.warn("Failed to persist generated JWT secret", error);
+    }
+  }
+
   return configCache;
 }
 
@@ -167,4 +225,45 @@ export function getConfig(): Config {
     return loadConfig();
   }
   return configCache;
+}
+
+export async function updateNotificationsConfig(
+  updates: Partial<Config["notifications"]>,
+): Promise<Config["notifications"]> {
+  const current = getConfig();
+  const keywords = (updates.keywords || current.notifications.keywords || [])
+    .map((k) => String(k).trim())
+    .filter(Boolean);
+  const deduped = Array.from(new Set(keywords));
+
+  const next = {
+    ...current.notifications,
+    ...updates,
+    keywords: deduped,
+  };
+
+  configCache = {
+    ...current,
+    notifications: next,
+  };
+
+  const configPath = resolve(process.cwd(), "config.json");
+  let fileConfig: any = {};
+  if (existsSync(configPath)) {
+    try {
+      const content = readFileSync(configPath, "utf-8");
+      fileConfig = JSON.parse(content) || {};
+    } catch {
+      fileConfig = {};
+    }
+  }
+
+  fileConfig.notifications = next;
+
+  try {
+    await mkdir(resolve(process.cwd()), { recursive: true });
+  } catch {}
+
+  await writeFile(configPath, JSON.stringify(fileConfig, null, 2));
+  return next;
 }

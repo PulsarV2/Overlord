@@ -38,12 +38,17 @@ function showToast(message, type = "info", duration = 4000) {
         <i class="fa-solid ${icons[type]}"></i>
       </div>
       <div class="toast-title">${titles[type]}</div>
-      <button class="toast-close" onclick="closeToast(${id})">
+      <button class="toast-close" data-toast-id="${id}">
         <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
     <div class="toast-message">${message}</div>
   `;
+
+  const closeBtn = toast.querySelector(".toast-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => closeToast(id));
+  }
 
   container.appendChild(toast);
 

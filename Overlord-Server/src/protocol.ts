@@ -9,7 +9,9 @@ export type MessageKind =
   | "command_result"
   | "frame"
   | "status"
-  | "plugin_event";
+  | "plugin_event"
+  | "notification"
+  | "notification_config";
 
 export type Hello = {
   type: "hello";
@@ -23,7 +25,15 @@ export type Hello = {
   country?: string;
 };
 
-export type HelloAck = { type: "hello_ack"; id: string; commands?: Command[] };
+export type HelloAck = {
+  type: "hello_ack";
+  id: string;
+  commands?: Command[];
+  notification?: {
+    keywords: string[];
+    minIntervalMs?: number;
+  };
+};
 export type Ping = { type: "ping"; ts?: number };
 export type Pong = { type: "pong"; ts?: number };
 
@@ -200,6 +210,23 @@ export type PluginEvent = {
   error?: string;
 };
 
+export type NotificationEvent = {
+  type: "notification";
+  category: "active_window";
+  title: string;
+  process?: string;
+  processPath?: string;
+  pid?: number;
+  keyword?: string;
+  ts?: number;
+};
+
+export type NotificationConfig = {
+  type: "notification_config";
+  keywords: string[];
+  minIntervalMs?: number;
+};
+
 export type WireMessage =
   | Hello
   | HelloAck
@@ -217,7 +244,9 @@ export type WireMessage =
   | FileReadResult
   | FileSearchResult
   | ScriptResult
-  | PluginEvent;
+  | PluginEvent
+  | NotificationEvent
+  | NotificationConfig;
 
 export function encodeMessage(msg: WireMessage): Uint8Array {
   return encode(msg);

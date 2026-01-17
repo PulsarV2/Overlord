@@ -36,6 +36,8 @@ func (d *Dispatcher) Dispatch(ctx context.Context, envelope map[string]interface
 		return HandleCommand(ctx, d.Env, envelope)
 	case "plugin_event":
 		return HandlePluginEvent(ctx, d.Env, envelope)
+	case "notification_config":
+		return HandleNotificationConfig(ctx, d.Env, envelope)
 	case "command_abort":
 		cmdID, _ := envelope["commandId"].(string)
 		if cmdID != "" {

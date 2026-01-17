@@ -1,3 +1,11 @@
+import {
+  startNotificationClient,
+  setNotificationsEnabled,
+  getNotificationsEnabled,
+  subscribeStatus,
+  subscribeUnread,
+} from "./notify-client.js";
+
 const host = document.getElementById("top-nav");
 if (host) {
   host.className =
@@ -55,6 +63,12 @@ if (host) {
           ><i class="fa-solid fa-hammer"></i> Builder</a
         >
         <a
+          href="/notifications"
+          id="notifications-link"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/70 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors"
+          ><i class="fa-solid fa-bell"></i> Notifications</a
+        >
+        <a
           href="/users"
           id="users-link"
           class="hidden inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/70 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors"
@@ -62,6 +76,18 @@ if (host) {
         >
       </nav>
       <div class="flex items-center gap-2 md:justify-end md:shrink-0">
+        <button
+          id="notify-toggle"
+          class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/70 border border-slate-800 text-slate-300 hover:bg-slate-800"
+          title="Toggle notifications"
+        >
+          <i class="fa-solid fa-bell"></i>
+          <span id="notify-toggle-label">Notifications</span>
+          <span
+            id="notify-badge"
+            class="hidden min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-xs flex items-center justify-center"
+          ></span>
+        </button>
         <div
           class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-800 text-slate-100"
         >
@@ -102,6 +128,7 @@ if (host) {
     "/plugins": "plugins-link",
     "/build": "build-link",
     "/users": "users-link",
+    "/notifications": "notifications-link",
   };
   const activeId = activeMap[path];
   if (activeId) {
@@ -123,6 +150,7 @@ if (host) {
           headers: { "Content-Type": "application/json" },
         });
 
+
         if (res.ok) {
           window.location.href = "/";
         } else {
@@ -134,6 +162,41 @@ if (host) {
       }
     });
   }
+
+  const notifyToggle = document.getElementById("notify-toggle");
+  const notifyToggleLabel = document.getElementById("notify-toggle-label");
+  const notifyBadge = document.getElementById("notify-badge");
+  const updateToggle = () => {
+    const enabled = getNotificationsEnabled();
+    if (notifyToggleLabel) {
+      notifyToggleLabel.textContent = enabled ? "Notifications On" : "Notifications Off";
+    }
+    if (notifyToggle) {
+      notifyToggle.classList.toggle("text-emerald-200", enabled);
+      notifyToggle.classList.toggle("border-emerald-500/40", enabled);
+      notifyToggle.classList.toggle("text-slate-300", !enabled);
+    }
+  };
+
+  notifyToggle?.addEventListener("click", () => {
+    const next = !getNotificationsEnabled();
+    setNotificationsEnabled(next);
+    updateToggle();
+  });
+
+  subscribeUnread((count) => {
+    if (!notifyBadge) return;
+    notifyBadge.textContent = String(count);
+    notifyBadge.classList.toggle("hidden", count <= 0);
+  });
+
+  updateToggle();
+  startNotificationClient();
+  subscribeStatus((status) => {
+    if (status === "connected") {
+      // no-op
+    }
+  });
 
   const usernameDisplay = document.getElementById("username-display");
   const roleBadge = document.getElementById("role-badge");

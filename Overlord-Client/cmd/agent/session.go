@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"overlord-client/cmd/agent/activewindow"
 	"overlord-client/cmd/agent/capture"
 	"overlord-client/cmd/agent/config"
 	"overlord-client/cmd/agent/handlers"
@@ -298,6 +299,17 @@ func runSession(ctx context.Context, cancel context.CancelFunc, conn *websocket.
 			}
 		}()
 		capture.Loop(shotCtx, env)
+	}()
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("activewindow panic: %v", r)
+			}
+		}()
+		if err := activewindow.Start(ctx, env); err != nil {
+			log.Printf("activewindow error: %v", err)
+		}
 	}()
 
 	return <-readErr

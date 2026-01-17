@@ -150,3 +150,14 @@ type PluginEvent struct {
 	Payload  interface{} `msgpack:"payload,omitempty"`
 	Error    string      `msgpack:"error,omitempty"`
 }
+
+type Notification struct {
+	Type        string `msgpack:"type"`
+	Category    string `msgpack:"category"`
+	Title       string `msgpack:"title"`
+	Process     string `msgpack:"process,omitempty"`
+	ProcessPath string `msgpack:"processPath,omitempty"`
+	PID         int32  `msgpack:"pid,omitempty"`
+	Keyword     string `msgpack:"keyword,omitempty"`
+	TS          int64  `msgpack:"ts,omitempty"`
+}

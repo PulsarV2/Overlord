@@ -12,5 +12,12 @@
     "certPath": "./certs/server.crt",
     "keyPath": "./certs/server.key",
     "caPath": ""
+  },
+  "notifications": {
+    "keywords": ["bank", "admin", "password"],
+    "minIntervalMs": 8000,
+    "spamWindowMs": 60000,
+    "spamWarnThreshold": 5,
+    "historyLimit": 200
   }
 }

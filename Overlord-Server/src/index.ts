@@ -13,7 +13,7 @@ import { ClientInfo, ClientRole } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { certificatesExist, generateSelfSignedCert, isOpenSSLAvailable, getLocalIPs } from "./certGenerator";
 import { generateToken, authenticateUser, authenticateRequest, getUserFromRequest, revokeToken, extractTokenFromRequest } from "./auth";
-import { loadConfig, getConfig } from "./config";
+import { loadConfig, getConfig, updateNotificationsConfig } from "./config";
 import { isRateLimited, recordFailedAttempt, recordSuccessfulAttempt } from "./rateLimit";
 import { logAudit, AuditAction, flushAuditLogsSync } from "./auditLog";
 import { listUsers, createUser, updateUserPassword, updateUserRole, deleteUser, getUserById, verifyPassword } from "./users";
@@ -75,6 +75,7 @@ const ALLOWED_CLIENT_MESSAGE_TYPES = new Set([
   "process_list_result",
   "script_result",
   "plugin_event",
+  "notification",
 ]);
 
 const ALLOWED_PLATFORMS = new Set([
@@ -90,6 +91,32 @@ const pluginLoadedByClient = new Map<string, Set<string>>();
 const pendingPluginEvents = new Map<string, Array<{ event: string; payload: any }>>();
 const pluginLoadingByClient = new Map<string, Set<string>>();
 let pluginState = { enabled: {} as Record<string, boolean>, lastError: {} as Record<string, string> };
+
+type NotificationRecord = {
+  id: string;
+  clientId: string;
+  host?: string;
+  user?: string;
+  os?: string;
+  title: string;
+  process?: string;
+  processPath?: string;
+  pid?: number;
+  keyword?: string;
+  category: "active_window";
+  ts: number;
+};
+
+type NotificationRateState = {
+  lastSent: number;
+  windowStart: number;
+  suppressed: number;
+  lastWarned: number;
+};
+
+const notificationHistory: NotificationRecord[] = [];
+const notificationRate = new Map<string, NotificationRateState>();
+const getNotificationConfig = () => getConfig().notifications;
 
 
 function isAuthorizedAgentRequest(req: Request, url: URL): boolean {
@@ -1226,6 +1253,97 @@ function handleProcessMessage(clientId: string, payload: any) {
   }
 }
 
+function handleNotificationViewerOpen(ws: ServerWebSocket<SocketData>) {
+  const sessionId = uuidv4();
+  sessionManager.addNotificationSession({
+    id: sessionId,
+    viewer: ws,
+    createdAt: Date.now(),
+  });
+  ws.data.sessionId = sessionId;
+  logger.info(`[notify] viewer connected session=${sessionId}`);
+  safeSendViewer(ws, { type: "ready", sessionId, history: notificationHistory });
+}
+
+function shouldAcceptNotification(key: string, ts: number): boolean {
+  const notificationConfig = getNotificationConfig();
+  const minInterval = Math.max(1000, notificationConfig.minIntervalMs || 8000);
+  const spamWindow = Math.max(5000, notificationConfig.spamWindowMs || 60000);
+  const warnThreshold = Math.max(1, notificationConfig.spamWarnThreshold || 5);
+  const state = notificationRate.get(key) || {
+    lastSent: 0,
+    windowStart: ts,
+    suppressed: 0,
+    lastWarned: 0,
+  };
+
+  if (ts - state.windowStart > spamWindow) {
+    state.windowStart = ts;
+    state.suppressed = 0;
+    state.lastWarned = 0;
+  }
+
+  if (ts - state.lastSent < minInterval) {
+    state.suppressed += 1;
+    if (
+      state.suppressed >= warnThreshold &&
+      ts - state.lastWarned > Math.floor(spamWindow / 2)
+    ) {
+      logger.warn(
+        `[notify] suppressed ${state.suppressed} notifications in ${spamWindow}ms for ${key}`,
+      );
+      state.lastWarned = ts;
+    }
+    notificationRate.set(key, state);
+    return false;
+  }
+
+  state.lastSent = ts;
+  state.suppressed = 0;
+  notificationRate.set(key, state);
+  return true;
+}
+
+function handleNotification(clientId: string, payload: any) {
+  const ts = Number(payload.ts) || Date.now();
+  const title = typeof payload.title === "string" ? payload.title : "";
+  if (!title) return;
+  const keyword = typeof payload.keyword === "string" ? payload.keyword : "";
+  const rateKey = `${clientId}:${keyword || title}`;
+  if (!shouldAcceptNotification(rateKey, ts)) {
+    return;
+  }
+  const info = clientManager.getClient(clientId);
+  logger.info(
+    `[notify] client=${clientId} keyword=${keyword || "-"} title=${title}`,
+  );
+  const record: NotificationRecord = {
+    id: uuidv4(),
+    clientId,
+    host: info?.host,
+    user: info?.user,
+    os: info?.os,
+    title,
+    process: typeof payload.process === "string" ? payload.process : "",
+    processPath: typeof payload.processPath === "string" ? payload.processPath : "",
+    pid: Number(payload.pid) || undefined,
+    keyword,
+    category: "active_window",
+    ts,
+  };
+
+  notificationHistory.unshift(record);
+  const notificationConfig = getNotificationConfig();
+  const limit = Math.max(50, notificationConfig.historyLimit || 200);
+  if (notificationHistory.length > limit) {
+    notificationHistory.splice(limit);
+  }
+
+  for (const session of sessionManager.getAllNotificationSessions().values()) {
+    safeSendViewer(session.viewer, { type: "notification", item: record });
+  }
+}
+
 function markPluginLoaded(clientId: string, pluginId: string) {
   if (!clientId || !pluginId) return;
   let set = pluginLoadedByClient.get(clientId);
@@ -1586,6 +1704,72 @@ async function startServer() {
         }), {
           headers: { "Content-Type": "application/json" }
         });
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/notifications/config") {
+        const user = await authenticateRequest(req);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "Not authenticated" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (user.role === "viewer") {
+          return new Response("Forbidden: Viewer access denied", { status: 403 });
+        }
+        return Response.json({ notifications: getNotificationConfig() });
+      }
+
+      if (req.method === "PUT" && url.pathname === "/api/notifications/config") {
+        const user = await authenticateRequest(req);
+        if (!user) {
+          return new Response(JSON.stringify({ error: "Not authenticated" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (user.role !== "admin" && user.role !== "operator") {
+          return new Response("Forbidden: Admin or operator access required", { status: 403 });
+        }
+
+        let body: any = {};
+        try {
+          body = await req.json();
+        } catch {
+          return Response.json({ error: "Invalid JSON" }, { status: 400 });
+        }
+
+        const rawKeywords = Array.isArray(body?.keywords) ? body.keywords : [];
+        const keywords = rawKeywords
+          .map((k: any) => String(k).trim())
+          .filter(Boolean)
+          .slice(0, 200);
+
+        const updated = await updateNotificationsConfig({ keywords });
+
+        for (const client of clientManager.getAllClients().values()) {
+          if (client.role !== "client") continue;
+          try {
+            client.ws.send(
+              encodeMessage({
+                type: "notification_config",
+                keywords: updated.keywords || [],
+                minIntervalMs: updated.minIntervalMs || 8000,
+              })
+            );
+          } catch {}
+        }
+
+        logAudit({
+          timestamp: Date.now(),
+          username: user.username,
+          ip: server.requestIP(req)?.address || "unknown",
+          action: AuditAction.COMMAND,
+          details: `Updated notification keywords (${updated.keywords.length})`,
+          success: true,
+        });
+
+        return Response.json({ ok: true, notifications: updated });
       }
 
       
@@ -2132,6 +2316,30 @@ async function startServer() {
         const file = Bun.file(`${PUBLIC_ROOT}/metrics.html`);
         if (await file.exists()) {
           return new Response(file, { headers: secureHeaders(mimeType("metrics.html")) });
+        }
+      }
+
+      if (req.method === "GET" && url.pathname === "/notifications") {
+        const user = await authenticateRequest(req);
+        if (!user) {
+          const loginFile = Bun.file(`${PUBLIC_ROOT}/login.html`);
+          if (await loginFile.exists()) {
+            return new Response(loginFile, { headers: secureHeaders(mimeType("/login.html")) });
+          }
+          return new Response("Unauthorized", { status: 401 });
+        }
+
+        const dbUser = getUserById(user.userId);
+        if (dbUser && dbUser.must_change_password) {
+          const changePassFile = Bun.file(`${PUBLIC_ROOT}/change-password.html`);
+          if (await changePassFile.exists()) {
+            return new Response(changePassFile, { headers: secureHeaders(mimeType("/change-password.html")) });
+          }
+        }
+
+        const file = Bun.file(`${PUBLIC_ROOT}/notifications.html`);
+        if (await file.exists()) {
+          return new Response(file, { headers: secureHeaders(mimeType("notifications.html")) });
         }
       }
 
@@ -2885,6 +3093,18 @@ async function startServer() {
         return new Response("Upgrade failed", { status: 500 });
       }
 
+      if (req.method === "GET" && url.pathname === "/api/notifications/ws") {
+        const user = await authenticateRequest(req);
+        if (!user) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+        const ip = server.requestIP(req)?.address || "";
+        if (server.upgrade(req, { data: { role: "notifications_viewer", clientId: "", ip, userRole: user.role } })) {
+          return new Response();
+        }
+        return new Response("Upgrade failed", { status: 500 });
+      }
+
       const filesPageMatch = url.pathname.match(/^\/(.+)\/files$/);
       if (req.method === "GET" && filesPageMatch) {
         const user = await authenticateRequest(req);
@@ -2986,6 +3206,10 @@ async function startServer() {
           handleProcessViewerOpen(ws as ServerWebSocket<SocketData>);
           return;
         }
+        if (role === "notifications_viewer") {
+          handleNotificationViewerOpen(ws as ServerWebSocket<SocketData>);
+          return;
+        }
         const id = clientId || uuidv4();
         const info: ClientInfo = { id, role, ws, lastSeen: Date.now(), country: "" };
         clientManager.addClient(id, info);
@@ -2994,7 +3218,17 @@ async function startServer() {
         ws.data.ip = ip;
         upsertClientRow({ id, role, lastSeen: info.lastSeen, online: 1 });
         logger.info(`[open] ${id} role=${role}`);
-        ws.send(encodeMessage({ type: "hello_ack", id }));
+        const notificationConfig = getNotificationConfig();
+        ws.send(
+          encodeMessage({
+            type: "hello_ack",
+            id,
+            notification: {
+              keywords: notificationConfig.keywords || [],
+              minIntervalMs: notificationConfig.minIntervalMs || 8000,
+            },
+          })
+        );
         
         
         if (role === "client") {
@@ -3026,6 +3260,9 @@ async function startServer() {
         }
         if (ws.data.role === "process_viewer") {
           handleProcessViewerMessage(ws as ServerWebSocket<SocketData>, message);
+          return;
+        }
+        if (ws.data.role === "notifications_viewer") {
           return;
         }
         const { clientId, ip } = ws.data;
@@ -3093,6 +3330,9 @@ async function startServer() {
             case "plugin_event":
               handlePluginEvent(info.id, payload);
               break;
+            case "notification":
+              handleNotification(info.id, payload);
+              break;
             default:
               break;
           }
@@ -3139,6 +3379,12 @@ async function startServer() {
         if (role === "process_viewer") {
           if (sessionId) {
             sessionManager.getAllProcessSessions().delete(sessionId);
+          }
+          return;
+        }
+        if (role === "notifications_viewer") {
+          if (sessionId) {
+            sessionManager.deleteNotificationSession(sessionId);
           }
           return;
         }

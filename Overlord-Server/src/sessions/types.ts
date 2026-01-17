@@ -6,7 +6,8 @@ export type SocketRole =
   | "console_viewer"
   | "rd_viewer"
   | "file_browser_viewer"
-  | "process_viewer";
+  | "process_viewer"
+  | "notifications_viewer";
 
 export type SocketData = {
   role: SocketRole;
@@ -40,6 +41,12 @@ export type FileBrowserViewer = {
 export type ProcessViewer = {
   id: string;
   clientId: string;
+  viewer: ServerWebSocket<SocketData>;
+  createdAt: number;
+};
+
+export type NotificationsViewer = {
+  id: string;
   viewer: ServerWebSocket<SocketData>;
   createdAt: number;
 };
